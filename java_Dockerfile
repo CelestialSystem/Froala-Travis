@@ -1,0 +1,35 @@
+FROM ubuntu:xenial
+
+WORKDIR /var/www/html/
+ENV APACHE_DOCUMENT_ROOT /var/www/html/Examples/WebContent/
+
+RUN apt-get update -y
+RUN apt-get install iputils-ping -y
+RUN apt-get install net-tools wget curl php-cli php-mbstring php-zip php-zip php-intl php7.0-xml -y
+
+RUN apt-get update \
+    && apt-get install -y git zip unzip zlib1g-dev libzip-dev \
+    && apt-get -y autoremove \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN apt-get update -y && apt-get install  apache2 apache2-utils python3 nodejs-legacy npm -y
+
+
+
+COPY . .
+WORKDIR /var/www/html/Examples/
+RUN npm install -g bower
+RUN bower --allow-root install
+
+
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+RUN chown -R www-data:www-data /var/www/html/
+RUN chown -R www-data:www-data /var/www/html/Examples/WebContent/
+RUN a2enmod rewrite
+
+EXPOSE 80
+CMD ["apache2ctl", "-D", "FOREGROUND"]
+
+
